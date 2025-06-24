@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle de Equipamentos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+    }
+    button {
+      padding: 10px;
+      margin: 6px 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h2>Controle de Equipamentos</h2>
+  <form id="equipForm">
+    <label>ID</label>
+    <input type="text" id="id" placeholder="(Para atualizar ou excluir)" />
+
+    <label>Nº Tombo</label>
+    <input type="text" id="tombo" required />
+
+    <label>Descrição</label>
+    <input type="text" id="descricao" required />
+
+    <label>Marca/Modelo</label>
+    <input type="text" id="marcaModelo" required />
+
+    <label>SETOR</label>
+    <input type="text" id="setor" required />
+
+    <label>COLABORADOR</label>
+    <input type="text" id="colaborador" required />
+
+    <label>OBS</label>
+    <textarea id="obs"></textarea>
+
+    <div style="margin-top:10px;">
+      <button type="button" onclick="salvar()">💾 Salvar</button>
+      <button type="button" onclick="pesquisar()">🔍 Pesquisar</button>
+      <button type="button" onclick="atualizar()">✏️ Atualizar</button>
+      <button type="button" onclick="excluir()">🗑️ Excluir</button>
+    </div>
+  </form>
+
+  <p id="mensagem"></p>
+
+  <script>
+    const url = 'https://script.google.com/macros/s/AKfycbx1JFVaiBIxW53mNI5CRFK4WbWBRtYlcv4HtFQEY9afZ5bGwFaeVpxjxOjiqy9XR_GzYw/exec';
+    const msg = document.getElementById('mensagem');
+
+    function mostrarMensagem(texto, tipo='success') {
+      msg.innerText = texto;
+      msg.className = tipo;
+    }
+
+    function limparFormulario() {
+      document.getElementById("equipForm").reset();
+    }
+
+    async function salvar() {
+      const dados = coletarDadosFormulario();
+      dados.acao = "salvar";
+
+      const resp = await enviarDados(dados);
+      mostrarMensagem(resp);
+      limparFormulario();
+    }
+
+    async function pesquisar() {
+      const id = document.getElementById('id').value;
+      const tombo = document.getElementById('tombo').value;
+
+      if (!id && !tombo) {
+        mostrarMensagem("Informe o ID ou Nº Tombo para buscar.", 'error');
+        return;
+      }
+
+      const dados = { acao: "pesquisar", id, tombo };
+      const resposta = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(dados)
+      });
+
+      const res = await resposta.json();
+      if (res.status === "erro") {
+        mostrarMensagem(res.mensagem, 'error');
+      } else {
+        preencherFormulario(res.dados);
+        mostrarMensagem("Registro encontrado.");
+      }
+    }
+
+    async function atualizar() {
+      const dados = coletarDadosFormulario();
+      if (!dados.id) {
+        mostrarMensagem("Informe o ID para atualizar.", 'error');
+        return;
+      }
+      dados.acao = "atualizar";
+
+      const resp = await enviarDados(dados);
+      mostrarMensagem(resp);
+      limparFormulario();
+    }
+
+    async function excluir() {
+      const id = document.getElementById('id').value;
+      if (!id) {
+        mostrarMensagem("Informe o ID para excluir.", 'error');
+        return;
+      }
+
+      const dados = { acao: "excluir", id };
+      const resp = await enviarDados(dados);
+      mostrarMensagem(resp);
+      limparFormulario();
+    }
+
+    function coletarDadosFormulario() {
+      return {
+        id: document.getElementById('id').value,
+        tombo: document.getElementById('tombo').value,
+        descricao: document.getElementById('descricao').value,
+        marcaModelo: document.getElementById('marcaModelo').value,
+        setor: document.getElementById('setor').value,
+        colaborador: document.getElementById('colaborador').value,
+        obs: document.getElementById('obs').value
+      };
+    }
+
+    function preencherFormulario(dados) {
+      document.getElementById('id').value = dados.id || '';
+      document.getElementById('tombo').value = dados.tombo || '';
+      document.getElementById('descricao').value = dados.descricao || '';
+      document.getElementById('marcaModelo').value = dados.marcaModelo || '';
+      document.getElementById('setor').value = dados.setor || '';
+      document.getElementById('colaborador').value = dados.colaborador || '';
+      document.getElementById('obs').value = dados.obs || '';
+    }
+
+    async function enviarDados(dados) {
+      try {
+        const resposta = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(dados)
+        });
+        return await resposta.text();
+      } catch (error) {
+        return "Erro de conexão: " + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
